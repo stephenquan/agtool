@@ -98,7 +98,7 @@ generateToken() {
   args+=(-d f="${__f}")
   args+=("${__other[@]}")
   args+=("${__tokenServicesUrl}")
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -226,7 +226,7 @@ portalUserContent() {
   args+=(-d token="${__token}")
   args+=("${__other[@]}")
   args+=("${__url}")
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -270,7 +270,7 @@ portalDeleteFolder() {
   args+=(-d token="${__token}")
   args+=(-d f=pjson)
   args+=("${__portalUrl}"/sharing/rest/content/users/"${__user}"/"${__folderId}"/delete)
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -384,7 +384,7 @@ portalCreateFolder() {
   args+=(-d token="${__token}")
   args+=(-d f=pjson)
   args+=("${__portalUrl}"/sharing/rest/content/users/"${__user}"/createFolder)
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -504,7 +504,7 @@ portalDeleteItem() {
   args+=(-d f="${__f}")
   args+=("${__other[@]}")
   args+=("${__url}")
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -663,7 +663,7 @@ portalUpdateItem() {
   [ "${__thumbnail}" != "" ] && args+=(-F thumbnail="@${__thumbnail}")
   args+=("${__other[@]}")
   args+=("${__url}")
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -725,7 +725,7 @@ portalAddItem() {
   [ "${__thumbnail}" != "" ] && args+=(-F thumbnail="@${__thumbnail}")
   args+=("${__other[@]}")
   args+=("${__url}")
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
   echo
 
 }
@@ -839,7 +839,7 @@ portalAddOrUpdateItem() {
 
   fi
 
-  if "${__filePath}" == "" ]; then
+  if [ "${__filePath}" == "" ]; then
 
     cat <<EOF
 Item does not exists.
@@ -848,6 +848,10 @@ EOF
 
     exit 1
 
+  fi
+
+  if [ "${__itemTitle}" == "" ] && [ "${__fileName}" != "" ]; then
+    __itemTitle="${__fileName}"
   fi
 
   args=()
@@ -1138,6 +1142,10 @@ updateItemTool() {
   local __fileName=""
   local __folderTitle=""
 
+  if [ "${__outputPath}" == "" ] && [ "${__itemName}" != "" ]; then
+    __outputPath="${__itemName}"
+  fi
+
   if [ "${__outputPath}" != "" ]; then
     __fileName=$(basename "${__outputPath}")
     __folderTitle=$(dirname "${__outputPath}")
@@ -1145,10 +1153,6 @@ updateItemTool() {
 
   if [ "${__fileName}" == "" ]; then
     __fileName=$(basename "${__filePath}")
-  fi
-
-  if [ "${__itemTitle}" == "" ]; then
-    __itemTitle="${__fileName}"
   fi
 
   local args=()
@@ -1336,7 +1340,7 @@ catTool() {
   args+=(-L)
   args+=(-F token="${__token}")
   args+=("${__url}"/data)
-  curl "${args[@]}"
+  curl "${args[@]}" | cat
 
 }
 
