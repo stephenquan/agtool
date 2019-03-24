@@ -1375,23 +1375,48 @@ catTool() {
 #----------------------------------------------------------------------
 
 
+agtoolSyntax() {
+
+  cat << EOF
+
+agtool login [-user user] [-password -password]
+agtool loginInfo
+agtool createFolder [folderTitle]
+agtool deleteFolder [folderTitle]
+agtool updateItem [-name              [folderTitle/]itemName]
+                  [-i                 inputPath]
+                  [-description       description]
+                  [-snippet           snippet]
+                  [-accessInformation accessInformation]
+                  [-licenseInfo       licenseInfo]
+                  [-thumbnail         thumbnailPath]
+agtool cat [folderTitle/]itemName
+
+EOF
+
+}
+
+
+#----------------------------------------------------------------------
+#
+#----------------------------------------------------------------------
+
+
 agtool() {
 
   case "$1" in
 
-  login)        shift; loginTool "${@}" ;;
-  loginInfo)    shift; loginInfoTool "${@}" ;;
-  createFolder) shift; createFolderTool "${@}" ;;
-  deleteFolder) shift; deleteFolderTool "${@}" ;;
-  updateItem)   shift; updateItemTool "${@}" ;;
-  cat)          shift; catTool "${@}" ;;
-
-  *)
-    echo "Not implemented (yet)"
-    exit 1
-    ;;
+  login)        shift; loginTool "${@}" ; return ;;
+  loginInfo)    shift; loginInfoTool "${@}" ; return ;;
+  createFolder) shift; createFolderTool "${@}" ; return ;;
+  deleteFolder) shift; deleteFolderTool "${@}" ; return ;;
+  updateItem)   shift; updateItemTool "${@}" ; return ;;
+  cat)          shift; catTool "${@}" ; return ;;
 
   esac
+
+  agtoolSyntax
+  exit 1
 
 }
 
