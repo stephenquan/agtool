@@ -1101,26 +1101,35 @@ updateItemTool() {
   local __f=pjson
   local __other=()
   local __arg=
-  local __key=itemName
+  local __args=
+  local __key=
   while [ "$1" != "" ]; do
     __arg="$1"
     shift
-    case "${__arg}" in
-    -*) __key="${__arg#-}" ;;
-    *)
+
+    if [ "${__key}" != "" ]; then
       case "${__key}" in
       id     | itemId)     __itemId="${__arg}" ;;
       title  | itemTitle)  __itemTitle="${__arg}" ;;
       type   | itemType)   __itemType="${__arg}" ;;
       name   | itemName)   __itemName="${__arg}" ;;
-      input  | i )         __filePath="${__arg}" ;;
+      input  | i)          __filePath="${__arg}" ;;
       output | o)          __outputPath="${__arg}" ;;
       f)                   __f="${__arg}" ;;
-      "")                  echo Skipping "${__arg}"; ((0)) ;;
       *)                   __other+=("-${__key}" "${__arg}") ;;
       esac
       __key=
+      continue
+    fi
+
+    case "${__arg}" in
+    -*) __key="${__arg#-}" ; continue ;;
     esac
+
+    [ "${__itemName}" == "" ] && __itemName="${__arg}" && continue
+
+    echo Skipping "${__arg}"; ((0))
+
   done
 
   if [ "${__itemId}" == "" ]; then
@@ -1141,6 +1150,18 @@ updateItemTool() {
 
   local __fileName=""
   local __folderTitle=""
+  local __tmpFilePath=""
+
+  if [ "${__filePath}" == "-" ]; then
+
+    __tmpFilePath="${agtoolTmp}"/updateItemTool/filePath-$$.dat
+    __filePath="${__tmpFilePath}"
+
+    makeFolderForFile "${__tmpFilePath}"
+
+    cat > "${__tmpFilePath}"
+
+  fi
 
   if [ "${__outputPath}" == "" ] && [ "${__itemName}" != "" ]; then
     __outputPath="${__itemName}"
@@ -1167,6 +1188,10 @@ updateItemTool() {
   [ "${__folderTitle}" != "" ] && args+=(-folderTitle "${__folderTitle}")
   args+=("${__other[@]}")
   portalAddOrUpdateItem "${args[@]}"
+
+  if [ "${__tmpFilePath}" != "" ] && [ -f "${__tmpFilePath}" ]; then
+    rm "${__tmpFilePath}"
+  fi
 
 }
 
@@ -1337,6 +1362,7 @@ catTool() {
   local __url="${__portalUrl}"/sharing/rest/content/items/"${__itemId}"
 
   args=()
+  args+=("${CURL_OPTS[@]}")
   args+=(-L)
   args+=(-F token="${__token}")
   args+=("${__url}"/data)
