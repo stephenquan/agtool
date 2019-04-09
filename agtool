@@ -903,7 +903,7 @@ showSession() {
 
   cat << EOF
 agtoolToken:         ${agtoolToken}
-agtoolTokenExpires:  ${agtoolTokenExpires} ($(date --date='@'$((agtoolTokenExpires / 1000))))
+agtoolTokenExpires:  ${agtoolTokenExpires} ($(date -r ${agtoolTokenExpires}))
 agtoolTokenValid:    ${agtoolTokenValid}
 agtoolTokenValidFor: ${agtoolTokenValidFor}
 EOF
@@ -1374,6 +1374,101 @@ catTool() {
 #
 #----------------------------------------------------------------------
 
+lsTool() {
+
+  loadSession
+
+  if (( !agtoolTokenValid )); then
+    echo Please login with: agtool login
+    exit 1
+  fi
+
+  local __portalUrl="${agtoolPortalUrl}"
+  local __user="${agtoolUser}"
+  local __token="${agtoolToken}"
+  local __folderTitle=
+  local __folderId=
+  local __f=pjson
+  local __other=()
+  local __args=("${@}")
+  local __arg=
+  local __idx=0
+  local __key=
+  local __json="${agtoolTmp}"/lsTool/json.txt
+  local __data="${agtoolTmp}"/lsTool/data.txt
+  while [ "$1" != "" ]; do
+    __arg="$1"
+    shift
+    if [ "${__key?}" != "" ]; then
+      case "${__key}" in
+      folderTitle)         __folderTitle="${__arg}" ;;
+      folderId)            __folderId="${__arg}" ;;
+      f)                   __f="${__arg}" ;;
+      *)                   __other+=("-${__key}" "${__arg}") ;;
+      esac
+      __key=
+      continue
+    fi
+
+    case "${__arg?}" in
+    -*) __key="${__arg#-}" ; continue ;;
+    esac
+
+    if [ "${__folderTitle?}" == "" ]; then
+      __folderTitle="${__arg?}"
+      continue
+    fi
+
+    echo "Skipping ${__arg}"
+  done
+
+  if [ "${__folderId}" == "" ] && [ "${__folderTitle}" != "" ]; then
+
+    args=()
+    args+=(-portalUrl "${__portalUrl}")
+    args+=(-user      "${__user}")
+    args+=(-token     "${__token}")
+    portalUserContent "${args[@]}" | tee "${__json}" | flatjson > "${__data}"
+
+    local __folderIndex=$(grep '^folders\[.*\]\.title\s*"'"${__folderTitle}"'"' "${__data}" | perl -pe 's/^folders\[(.*)\].*/\1/')
+    if [ "${__folderIndex}" == "" ]; then
+      echo CRAP
+      grep "^folders\[.*\]\.title\s*" "${__data}"
+      exit 1
+    fi
+
+    __folderId=$(grep '^folders\['"${__folderIndex}"'\].id\s*".*"$' "${__data}" | getString)
+  fi
+
+  makeFolderForFile "${__json}"
+  makeFolderForFile "${__data}"
+
+  args=()
+  args+=(-portalUrl "${__portalUrl}")
+  args+=(-user      "${__user}")
+  args+=(-token     "${__token}")
+  if [ "${__folderId}" != "" ]; then
+    args+=(-folderId  "${__folderId}")
+  fi
+  portalUserContent "${args[@]}" | tee "${__json}" | flatjson > "${__data}"
+
+  local __total=$(getValueFromFile total "${__data?}")
+  local i
+  local name
+  local title
+  for (( i = 0; i < __total; i++ ))
+  do
+    name=$(grep items\\["${i?}"\\].name "${__data?}" | getString)
+    title=$(grep items\\["${i?}"\\].title "${__data?}" | getString)
+    echo "${name}" \""${title}"\"
+  done
+
+}
+
+#----------------------------------------------------------------------
+#
+#----------------------------------------------------------------------
+
 
 agtoolSyntax() {
 
@@ -1391,6 +1486,7 @@ agtool update    [-name              [folder/]itemName]
                  [-licenseInfo       licenseInfo]
                  [-thumbnail         thumbnailPath]
 agtool cat       [folder/]itemName
+agtool ls        [folder]
 
 EOF
 
@@ -1412,6 +1508,7 @@ agtool() {
   rmdir)        shift; rmdirTool "${@}" ; return ;;
   update)       shift; updateTool "${@}" ; return ;;
   cat)          shift; catTool "${@}" ; return ;;
+  ls)           shift; lsTool "${@}" ; return ;;
 
   esac
 
