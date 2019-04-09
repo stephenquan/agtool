@@ -1009,7 +1009,7 @@ loginInfoTool() {
 #----------------------------------------------------------------------
 
 
-createFolderTool() {
+mkdirTool() {
 
   loadSession
 
@@ -1023,7 +1023,7 @@ createFolderTool() {
   if [ "${__folderTitle}" == "" ]; then
 
 cat << EOF
-Syntax: $0 -createFolder folderTitle
+Syntax: $0 -mkdir folderTitle
 EOF
 
     exit 1
@@ -1044,7 +1044,7 @@ EOF
 #----------------------------------------------------------------------
 
 
-deleteFolderTool() {
+rmdirTool() {
 
   loadSession
 
@@ -1058,7 +1058,7 @@ deleteFolderTool() {
   if [ "${__folderTitle}" == "" ]; then
 
 cat << EOF
-Syntax: $0 -deleteFolder folderTitle
+Syntax: $0 rmdir folder
 EOF
 
     exit 1
@@ -1079,7 +1079,7 @@ EOF
 #----------------------------------------------------------------------
 
 
-updateItemTool() {
+updateTool() {
 
   loadSession
 
@@ -1154,7 +1154,7 @@ updateItemTool() {
 
   if [ "${__filePath}" == "-" ]; then
 
-    __tmpFilePath="${agtoolTmp}"/updateItemTool/filePath-$$.dat
+    __tmpFilePath="${agtoolTmp}"/updateTool/filePath-$$.dat
     __filePath="${__tmpFilePath}"
 
     makeFolderForFile "${__tmpFilePath}"
@@ -1379,18 +1379,18 @@ agtoolSyntax() {
 
   cat << EOF
 
-agtool login [-user user] [-password -password]
+agtool login     [-user user] [-password -password]
 agtool loginInfo
-agtool createFolder [folderTitle]
-agtool deleteFolder [folderTitle]
-agtool updateItem [-name              [folderTitle/]itemName]
-                  [-i                 inputPath]
-                  [-description       description]
-                  [-snippet           snippet]
-                  [-accessInformation accessInformation]
-                  [-licenseInfo       licenseInfo]
-                  [-thumbnail         thumbnailPath]
-agtool cat [folderTitle/]itemName
+agtool mkdir     [folder]
+agtool rmdir     [folder]
+agtool update    [-name              [folder/]itemName]
+                 [-i                 inputPath]
+                 [-description       description]
+                 [-snippet           snippet]
+                 [-accessInformation accessInformation]
+                 [-licenseInfo       licenseInfo]
+                 [-thumbnail         thumbnailPath]
+agtool cat       [folder/]itemName
 
 EOF
 
@@ -1408,13 +1408,14 @@ agtool() {
 
   login)        shift; loginTool "${@}" ; return ;;
   loginInfo)    shift; loginInfoTool "${@}" ; return ;;
-  createFolder) shift; createFolderTool "${@}" ; return ;;
-  deleteFolder) shift; deleteFolderTool "${@}" ; return ;;
-  updateItem)   shift; updateItemTool "${@}" ; return ;;
+  mkdir)        shift; mkdirTool "${@}" ; return ;;
+  rmdir)        shift; rmdirTool "${@}" ; return ;;
+  update)       shift; updateTool "${@}" ; return ;;
   cat)          shift; catTool "${@}" ; return ;;
 
   esac
 
+  loginInfoTool
   agtoolSyntax
   exit 1
 
