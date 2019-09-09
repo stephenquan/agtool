@@ -55,20 +55,19 @@ def get_default_username():
 def set_default_username( username ):
     set_settings( k_default_username, username )
 
-def get_user_settings( key, defaultValue="", username="" ):
+def hash_user_key( username, key):
     if username == "":
         username = get_default_username()
-    return get_settings( username + "-" + key, defaultValue )
+    return username + "_" + key
+
+def get_user_settings( key, defaultValue="", username="" ):
+    return get_settings( hash_user_key( username, key ), defaultValue )
 
 def set_user_settings( key, value, username="" ):
-    if username == "":
-        username = get_default_username()
-    set_settings( username + "-" + key, value )
+    set_settings( hash_user_key( username, key ), value )
 
 def remove_user_settings( key, username="" ):
-    if username == "":
-        username = get_default_username()
-    remove_settings( username + "-" + key )
+    remove_settings( hash_user_key( username, key ) )
 
 def get_token():
     token = get_user_settings( k_token )
