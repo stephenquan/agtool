@@ -114,16 +114,20 @@ def set_expires( expires ):
 def remove_expires( ):
     remove_user_settings( k_expires )
 
-def passthru_option( option ):
+def skip_option( option ):
     if option == "username":
-        return False
+        return True
     if option == "password":
-        return False
+        return True
     if option == "save":
-        return False
+        return True
     if option == "forget":
-        return False
-    return True
+        return True
+    if option == "file":
+        return True
+    if option == "thumbnail":
+        return True
+    return False
 
 def unary_option( option ):
     if option == "save":
@@ -501,11 +505,12 @@ def cmd_update( args ):
         params[ "tags" ] = "code, sample"
         params[ "f" ] = "pjson"
         for key in args[ "options" ]:
-            if passthru_option( key ):
+            if not skip_option( key ):
                 params[key] = args[ "options" ][key]
-        mime_type = "application/octet-stream"
         files = { }
-        files[ "file" ] = ( item_title, sys.stdin, mime_type )
+        if "file" in args[ "options" ]:
+            mime_type = "application/octet-stream"
+            files[ "file" ] = ( item_title, sys.stdin, mime_type )
         response = requests.post( url, params=params, files=files )
         print json.dumps( response.json(), indent=4, sort_keys=True )
         return
@@ -517,11 +522,13 @@ def cmd_update( args ):
     params[ "token" ] = token
     params[ "f" ] = "pjson"
     for key in args[ "options" ]:
-        if passthru_option( key ):
+        if not skip_option( key ):
             params[key] = args[ "options" ][key]
     mime_type = "application/octet-stream"
     files = { }
-    files[ "file" ] = ( item_title, sys.stdin.read(), mime_type )
+    if "file" in args[ "options" ]:
+        mime_type = "application/octet-stream"
+        files[ "file" ] = ( item_title, sys.stdin, mime_type )
     response = requests.post( url, params=params, files=files )
     print json.dumps( response.json(), indent=4, sort_keys=True )
 
