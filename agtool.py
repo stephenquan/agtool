@@ -275,10 +275,14 @@ def cmd_cat( args ):
     params = { }
     params[ "token" ] = token
     params[ "f" ] = "pjson"
-    response = requests.get( url, params=params )
+    response = requests.get( url, params=params, stream=True )
     # print response.text
-    sys.stdout.write( response.text )
+    # sys.stdout.write( response.text )
+    response.raw.decode_content = True
+    sys.stdout.write( response.raw.read() )
+    # sys.stdout.buffer.write( response.raw )
     sys.stdout.flush()
+    # os.write( 1, response.raw.read() )
 
 def cmd_info( args ):
     token = get_token_ex( args )
