@@ -166,8 +166,17 @@ def parse_args():
 def get_user_input( prompt, defaultValue="" ):
     if defaultValue != "":
         prompt = prompt + "[ " + defaultValue + " ]: "
-    value = raw_input( prompt )
+    value = input( prompt ) if sys.version_info >= (3,0) else raw_input( prompt )
     return value if value != "" else defaultValue
+
+def print_error( msg ):
+    sys.stdout.write( msg + "\n" )
+
+def print_obj( obj ):
+    sys.stdout.write( json.dumps( obj, indent=4, sort_keys=True ) + "\n" )
+
+def print_text( text ):
+    sys.stdout.write( text + "\n" )
 
 def elapsed_str( ms ):
     sec = math.trunc( ms / 1000.0 )
@@ -182,7 +191,7 @@ def get_folder_id( folder_title ):
         cmd_login()
     token = get_token()
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." );
         return
     url = portalUrl + "/sharing/rest/content/users/" + username
     params = { }
@@ -190,7 +199,7 @@ def get_folder_id( folder_title ):
     params[ "f" ] = "pjson"
     response = requests.get( url, params=params )
     if "folders" not in response.json():
-        print json.dumps( response.json(), indent=4, sort_keys=True )
+        print_obj( response.json() )
         return ""
     for folder in response.json()[ "folders" ]:
         if folder[ "title" ] == folder_title:
@@ -203,7 +212,7 @@ def get_item_id( item_title, folder_id=""):
         cmd_login()
     token = get_token()
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     url = portalUrl + "/sharing/rest/content/users/" + username
     if folder_id != "":
@@ -252,24 +261,24 @@ def crack_item( item_path ):
 def cmd_cat( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     url = portalUrl + "/sharing/rest/content/users/" + username
     if len( args[ "parameters" ] ) < 1:
-        print "cat what?"
+        print_error( "cat what?" )
         return
     item_obj = crack_item( args[ "parameters" ][1] )
     folder_title = item_obj[ "folder_title" ]
     folder_id = item_obj[ "folder_id" ]
     if folder_title != "" and folder_id == "":
         item_path = item_obj[ "item_path" ]
-        print "cat: " + item_path + ": No such file or directory"
+        print_error( "cat: " + item_path + ": No such folder." )
         return
     item_id = item_obj[ "item_id" ]
     if item_id == "":
         item_path = item_obj[ "item_path" ]
-        print "cat: " + item_path + ": No such file or directory"
+        print_error( "cat: " + item_path + ": No such item." )
         return
     url = portalUrl + "/sharing/rest/content/items/" + item_id + "/data"
     params = { }
@@ -287,36 +296,36 @@ def cmd_cat( args ):
 def cmd_info( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     url = portalUrl + "/sharing/rest/content/users/" + username
     if len( args[ "parameters" ] ) < 1:
-        print "info what?"
+        print_error( "info what?" )
         return
     item_obj = crack_item( args[ "parameters" ][1] )
     folder_title = item_obj[ "folder_title" ]
     folder_id = item_obj[ "folder_id" ]
     if folder_title != "" and folder_id == "":
         item_path = item_obj[ "item_path" ]
-        print "info: " + item_path + ": No such file or directory"
+        print_error( "info: " + item_path + ": No such folder." )
         return
     item_id = item_obj[ "item_id" ]
     if item_id == "":
         item_path = item_obj[ "item_path" ]
-        print "info: " + item_path + ": No such file or directory"
+        print_error( "info: " + item_path + ": No such item." )
         return
     url = portalUrl + "/sharing/rest/content/items/" + item_id
     params = { }
     params[ "token" ] = token
     params[ "f" ] = "pjson"
     response = requests.get( url, params=params )
-    print json.dumps( response.json(), indent=4, sort_keys=True )
+    print_obj( response.json() )
 
 def cmd_ls( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     url = portalUrl + "/sharing/rest/content/users/" + username
@@ -326,7 +335,7 @@ def cmd_ls( args ):
         folder_id = folder_obj[ "folder_id" ]
         folder_title = folder_obj[ "folder_title" ]
         if folder_id == "":
-            print "ls: " + folder_title + ": No such directory"
+            print_error( "ls: " + folder_title + ": No such folder." )
             return
         url = url + "/" + folder_id
     params = { }
@@ -335,7 +344,7 @@ def cmd_ls( args ):
     response = requests.get( url, params=params )
     if "folders" in response.json():
         for folder in response.json()[ "folders" ]:
-            print folder[ "title" ] + "/"
+            print_text( folder[ "title" ] + "/" )
     for item in response.json()[ "items" ]:
         item_name = item[ "name" ]
         if item_name is None:
@@ -343,7 +352,7 @@ def cmd_ls( args ):
         item_title = item[ "title" ]
         if item_title is None:
             item_title = ""
-        print item_name + " (" + item_title + ")"
+        print_text( item_name + " (" + item_title + ")" )
 
 def cmd_login( args ):
     username = get_default_username()
@@ -376,7 +385,7 @@ def cmd_login( args ):
             response = requests.post( url, params=params )
             tokenInfo = response.json()
             if "error" in tokenInfo:
-                print json.dumps( tokenInfo, indent=4, sort_keys=True )
+                print_obj( tokenInfo )
                 remove_password()
                 return
             if "token" in tokenInfo:
@@ -390,7 +399,7 @@ def cmd_login( args ):
     if password !="":
         if "save" in args[ "options" ]:
             set_password( password )
-    print "token_valid: " + elapsed_str( expires - time.time() * 1000.0 ) 
+    print_text( "token_valid: " + elapsed_str( expires - time.time() * 1000.0 )  )
 
 def cmd_logout( args ):
     username = get_default_username()
@@ -404,17 +413,17 @@ def cmd_logout( args ):
 def cmd_mkdir( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     if len( args[ "parameters" ] ) < 1:
-        print "mkdir what?"
+        print_error( "mkdir what?" )
         return
     folder_obj = crack_folder( args[ "parameters" ][1] )
     folder_title = folder_obj[ "folder_title" ]
     folder_id = folder_obj[ "folder_id" ]
     if folder_id != "":
-        print "mkdir: " + folder_title + ": Cannot create directory. It already exists."
+        print_error( "mkdir: " + folder_title + ": Cannot create directory. It already exists." )
         return
     url = portalUrl + "/sharing/rest/content/users/" + username + "/createFolder"
     params = { }
@@ -422,29 +431,29 @@ def cmd_mkdir( args ):
     params[ "token" ] = token
     params[ "f" ] = "pjson"
     response = requests.post( url, params=params )
-    print json.dumps( response.json(), indent=4, sort_keys=True )
+    print_obj( response.json() )
 
 def cmd_rm( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     if len( args[ "parameters" ] ) < 1:
-        print "rm what?"
+        print_error( "rm what?" )
         return
     item_obj = crack_item( args[ "parameters" ][1] )
     folder_title = item_obj[ "folder_title" ]
     folder_id = item_obj[ "folder_id" ]
     if folder_title != "" and folder_id == "":
         item_path = item_obj[ "item_path" ]
-        print "rm: " + item_path + ": No such directory."
+        print_error( "rm: " + item_path + ": No such folder." )
         return
     item_title = item_obj[ "item_title" ]
     item_id = item_obj[ "item_id" ]
     if item_id == "":
         item_path = item_obj[ "item_path" ]
-        print "rm: " + item_path + ": No such item."
+        print_error( "rm: " + item_path + ": No such item." )
         return
     url = portalUrl + "/sharing/rest/content/users/" + username
     if folder_id != "":
@@ -454,45 +463,45 @@ def cmd_rm( args ):
     params[ "token" ] = token
     params[ "f" ] = "pjson"
     response = requests.post( url, params=params )
-    print json.dumps( response.json(), indent=4, sort_keys=True )
+    print_obj( response.json() )
 
 def cmd_rmdir( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     if len( args[ "parameters" ] ) < 1:
-        print "rmdir what?"
+        print_error( "rmdir what?" )
         return
     folder_obj = crack_folder( args[ "parameters" ][1] )
     folder_title = folder_obj[ "folder_title" ]
     folder_id = folder_obj[ "folder_id" ]
     if folder_id == "":
-        print "rmdir: " + folder_title + ": No such directory."
+        print_error( "rmdir: " + folder_title + ": No such folder." )
         return
     url = portalUrl + "/sharing/rest/content/users/" + username + "/" + folder_id + "/delete"
     params = { }
     params[ "token" ] = token
     params[ "f" ] = "pjson"
     response = requests.post( url, params=params )
-    print json.dumps( response.json(), indent=4, sort_keys=True )
+    print_obj( response.json() )
 
 def cmd_update( args ):
     token = get_token_ex( args )
     if token == "":
-        print "Not logged in"
+        print_error( "Not logged in." )
         return
     username = get_default_username()
     if len( args[ "parameters" ] ) < 1:
-        print "update what?"
+        print_error( "update what?" )
         return
     item_obj = crack_item( args[ "parameters" ][1] )
     folder_title = item_obj[ "folder_title" ]
     folder_id = item_obj[ "folder_id" ]
     if folder_title != "" and folder_id == "":
         item_path = item_obj[ "item_path" ]
-        print "update: " + item_path + ": No such directory."
+        print_error( "update: " + item_path + ": No such folder." )
         return
     item_title = item_obj[ "item_title" ]
     item_id = item_obj[ "item_id" ]
@@ -515,7 +524,7 @@ def cmd_update( args ):
             mime_type = "application/octet-stream"
             files[ "file" ] = ( item_title, sys.stdin, mime_type )
         response = requests.post( url, params=params, files=files )
-        print json.dumps( response.json(), indent=4, sort_keys=True )
+        print_obj( response.json() )
         return
     url = portalUrl + "/sharing/rest/content/users/" + username
     if folder_id != "":
@@ -533,7 +542,7 @@ def cmd_update( args ):
         mime_type = "application/octet-stream"
         files[ "file" ] = ( item_title, sys.stdin, mime_type )
     response = requests.post( url, params=params, files=files )
-    print json.dumps( response.json(), indent=4, sort_keys=True )
+    print_obj( response.json() )
 
 load_settings()
 
