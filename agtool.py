@@ -487,6 +487,32 @@ def cmd_rmdir( args ):
     response = requests.post( url, params=params )
     print_obj( response.json() )
 
+def get_mime_type( filename ):
+    mime_type = "application/octet-stream"
+    if filename.endswith( (".jpg", ".jpeg") ):
+        return "image/jpeg"
+    if filename.endswith( ".png" ):
+        return "image/png"
+    if filename.endswith( ".gif" ):
+        return "image/gif"
+    return mime_type
+
+def get_file_stream( filepath, mime_type = "", filename = ""):
+    if filename == "":
+        filename = os.path.basename( filepath )
+    if mime_type == "":
+        mimetype = get_mime_type( filename )
+    stream = sys.stdin if filepath == "-" else open( filepath, "rb" )
+    return ( filename, stream, mime_type )
+
+def get_files( args ):
+    files = { }
+    if "file" in args[ "options" ]:
+        files[ "file" ] = get_file_stream( args[ "options" ][ "file" ] )
+    if "thumbnail" in args[ "options" ]:
+        files[ "thumbnail" ] = get_file_stream( args[ "options" ][ "thumbnail" ] )
+    return files
+
 def cmd_update( args ):
     token = get_token_ex( args )
     if token == "":
@@ -519,10 +545,7 @@ def cmd_update( args ):
         for key in args[ "options" ]:
             if not skip_option( key ):
                 params[key] = args[ "options" ][key]
-        files = { }
-        if "file" in args[ "options" ]:
-            mime_type = "application/octet-stream"
-            files[ "file" ] = ( item_title, sys.stdin, mime_type )
+        files = get_files( args )
         response = requests.post( url, params=params, files=files )
         print_obj( response.json() )
         return
@@ -536,11 +559,7 @@ def cmd_update( args ):
     for key in args[ "options" ]:
         if not skip_option( key ):
             params[key] = args[ "options" ][key]
-    mime_type = "application/octet-stream"
-    files = { }
-    if "file" in args[ "options" ]:
-        mime_type = "application/octet-stream"
-        files[ "file" ] = ( item_title, sys.stdin, mime_type )
+    files = get_files( args )
     response = requests.post( url, params=params, files=files )
     print_obj( response.json() )
 
