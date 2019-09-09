@@ -122,6 +122,8 @@ def skip_option( option ):
         return True
     if option == "forget":
         return True
+    if option == "out":
+        return True
     if option == "file":
         return True
     if option == "thumbnail":
@@ -173,7 +175,11 @@ def print_error( msg ):
     sys.stdout.write( msg + "\n" )
 
 def print_obj( obj ):
-    sys.stdout.write( json.dumps( obj, indent=4, sort_keys=True ) + "\n" )
+    if "out" in args[ "options" ]:
+        with open( args[ "options"][ "out" ], "wb" ) as out:
+            out.write( json.dumps( obj, indent=4, sort_keys=True ) + "\n" )
+    else:
+        sys.stdout.write( json.dumps( obj, indent=4, sort_keys=True ) + "\n" )
 
 def print_text( text ):
     sys.stdout.write( text + "\n" )
@@ -288,10 +294,12 @@ def cmd_cat( args ):
     # print response.text
     # sys.stdout.write( response.text )
     response.raw.decode_content = True
-    sys.stdout.write( response.raw.read() )
-    # sys.stdout.buffer.write( response.raw )
-    sys.stdout.flush()
-    # os.write( 1, response.raw.read() )
+    if "out" in args[ "options" ]:
+        with open( args[ "options"][ "out" ], "wb" ) as out:
+            out.write( response.raw.read() )
+    else:
+        sys.stdout.write( response.raw.read() )
+        sys.stdout.flush()
 
 def cmd_info( args ):
     token = get_token_ex( args )
@@ -342,9 +350,10 @@ def cmd_ls( args ):
     params[ "token" ] = token
     params[ "f" ] = "pjson"
     response = requests.get( url, params=params )
+    result = ""
     if "folders" in response.json():
         for folder in response.json()[ "folders" ]:
-            print_text( folder[ "title" ] + "/" )
+            result = result + folder[ "title" ] + "/"  + "\n"
     for item in response.json()[ "items" ]:
         item_name = item[ "name" ]
         if item_name is None:
@@ -352,7 +361,8 @@ def cmd_ls( args ):
         item_title = item[ "title" ]
         if item_title is None:
             item_title = ""
-        print_text( item_name + " (" + item_title + ")" )
+        result = result + item_name + " (" + item_title + ")" + "\n"
+    print_text( result )
 
 def cmd_login( args ):
     username = get_default_username()
@@ -399,7 +409,7 @@ def cmd_login( args ):
     if password !="":
         if "save" in args[ "options" ]:
             set_password( password )
-    print_text( "token_valid: " + elapsed_str( expires - time.time() * 1000.0 )  )
+    sys.stdout.write( "Current token valid for " + elapsed_str( expires - time.time() * 1000.0 ) + "\n" )
 
 def cmd_logout( args ):
     username = get_default_username()
