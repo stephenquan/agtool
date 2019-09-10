@@ -514,14 +514,16 @@ def get_file_stream( filepath, mime_type = "", filename = ""):
     if filename == "":
         filename = os.path.basename( filepath )
     if mime_type == "":
-        mimetype = get_mime_type( filename )
+        mime_type = get_mime_type( filename )
     stream = sys.stdin if filepath == "-" else open( filepath, "rb" )
+    print "filename: " + filename
+    print "mime_type: " + mime_type
     return ( filename, stream, mime_type )
 
-def get_files( args ):
+def get_files( args, item_title = "" ):
     files = { }
     if "file" in args[ "options" ]:
-        files[ "file" ] = get_file_stream( args[ "options" ][ "file" ] )
+        files[ "file" ] = get_file_stream( args[ "options" ][ "file" ], "", item_title )
     if "thumbnail" in args[ "options" ]:
         files[ "thumbnail" ] = get_file_stream( args[ "options" ][ "thumbnail" ] )
     return files
@@ -558,7 +560,7 @@ def cmd_update( args ):
         for key in args[ "options" ]:
             if not skip_option( key ):
                 params[key] = args[ "options" ][key]
-        files = get_files( args )
+        files = get_files( args, item_title )
         response = requests.post( url, params=params, files=files )
         print_obj( response.json() )
         return
@@ -572,7 +574,7 @@ def cmd_update( args ):
     for key in args[ "options" ]:
         if not skip_option( key ):
             params[key] = args[ "options" ][key]
-    files = get_files( args )
+    files = get_files( args, item_title )
     response = requests.post( url, params=params, files=files )
     print_obj( response.json() )
 
