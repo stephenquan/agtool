@@ -298,7 +298,10 @@ def cmd_cat( args ):
         with open( args[ "options"][ "out" ], "wb" ) as out:
             out.write( response.raw.read() )
     else:
-        sys.stdout.write( response.raw.read() )
+        if sys.version_info >= (3,0):
+            sys.stdout.buffer.write( response.raw.read() )
+        else:
+            sys.stdout.write( response.raw.read() )
         sys.stdout.flush()
 
 def cmd_info( args ):
