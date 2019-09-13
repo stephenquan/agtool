@@ -12,6 +12,8 @@ k_password = "password"
 k_token = "token"
 k_expires = "expires"
 
+args = { }
+
 def load_json_file( path ):
     if not os.path.isfile( path ):
         return { }
@@ -78,14 +80,15 @@ def get_token():
         return ""
     return token
 
-def get_token_ex( args ):
+def get_token_ex():
+    global args
     username = get_default_username()
     if "username" in args[ "options" ]:
         username = args[ "options" ][ "username" ]
         set_default_username( username )
     token = get_token()
     if token == "":
-        cmd_login( args )
+        _login()
         token = get_token()
     return token
 
@@ -138,6 +141,7 @@ def unary_option( option ):
     return False
 
 def parse_args():
+    global args
     args = { }
     args[ "parameters" ] = [ ]
     args[ "options" ] = { }
@@ -163,7 +167,6 @@ def parse_args():
             args[ "options" ][ "username" ] = username
             args[ "parameters" ][1] = m.groups()[1]
             set_default_username( username )
-    return args
 
 def get_user_input( prompt, defaultValue="" ):
     if defaultValue != "":
@@ -192,13 +195,11 @@ def elapsed_str( ms ):
     return str(min) + " minutes"
 
 def get_folder_id( folder_title ):
-    username = get_default_username()
-    if username == "":
-        cmd_login()
-    token = get_token()
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." );
         return
+    username = get_default_username()
     url = portalUrl + "/sharing/rest/content/users/" + username
     params = { }
     params[ "token" ] = token
@@ -213,13 +214,11 @@ def get_folder_id( folder_title ):
     return ""
 
 def get_item_id( item_title, folder_id=""):
-    username = get_default_username()
-    if username == "":
-        cmd_login()
-    token = get_token()
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
+    username = get_default_username()
     url = portalUrl + "/sharing/rest/content/users/" + username
     if folder_id != "":
         url = url + "/" + folder_id
@@ -264,8 +263,9 @@ def crack_item( item_path ):
     result[ "item_path" ] = item_title if folder_title == "" else folder_title + "/" + item_title
     return result
 
-def cmd_cat( args ):
-    token = get_token_ex( args )
+def cmd_cat():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -304,8 +304,9 @@ def cmd_cat( args ):
             sys.stdout.write( response.raw.read() )
         sys.stdout.flush()
 
-def cmd_info( args ):
-    token = get_token_ex( args )
+def cmd_info():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -333,8 +334,9 @@ def cmd_info( args ):
     response = requests.get( url, params=params )
     print_obj( response.json() )
 
-def cmd_ls( args ):
-    token = get_token_ex( args )
+def cmd_ls():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -345,10 +347,11 @@ def cmd_ls( args ):
         folder_obj = crack_folder( args[ "parameters" ][1] )
         folder_id = folder_obj[ "folder_id" ]
         folder_title = folder_obj[ "folder_title" ]
-        if folder_id == "":
-            print_error( "ls: " + folder_title + ": No such folder." )
-            return
-        url = url + "/" + folder_id
+        if folder_title != "":
+            if folder_id == "":
+                print_error( "ls: " + folder_title + ": No such folder." )
+                return
+            url = url + "/" + folder_id
     params = { }
     params[ "token" ] = token
     params[ "f" ] = "pjson"
@@ -367,7 +370,8 @@ def cmd_ls( args ):
         result = result + item_name + " (" + item_title + ")" + "\n"
     print_text( result )
 
-def cmd_login( args ):
+def _login():
+    global args
     username = get_default_username()
     if "username" in args[ "options" ]:
         username = args[ "options" ][ "username" ]
@@ -412,9 +416,17 @@ def cmd_login( args ):
     if password !="":
         if "save" in args[ "options" ]:
             set_password( password )
+
+def cmd_login():
+    _login()
+    token = get_token()
+    if token == "":
+        return
+    expires = get_expires()
     sys.stdout.write( "Current token valid for " + elapsed_str( expires - time.time() * 1000.0 ) + "\n" )
 
-def cmd_logout( args ):
+def cmd_logout():
+    global args
     username = get_default_username()
     if "username" in args[ "options" ]:
         username = args[ "options" ][ "username" ]
@@ -423,8 +435,9 @@ def cmd_logout( args ):
     remove_expires()
     remove_password()
 
-def cmd_mkdir( args ):
-    token = get_token_ex( args )
+def cmd_mkdir():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -446,8 +459,9 @@ def cmd_mkdir( args ):
     response = requests.post( url, params=params )
     print_obj( response.json() )
 
-def cmd_rm( args ):
-    token = get_token_ex( args )
+def cmd_rm():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -478,8 +492,9 @@ def cmd_rm( args ):
     response = requests.post( url, params=params )
     print_obj( response.json() )
 
-def cmd_rmdir( args ):
-    token = get_token_ex( args )
+def cmd_rmdir():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -528,8 +543,9 @@ def get_files( args, item_title = "" ):
         files[ "thumbnail" ] = get_file_stream( args[ "options" ][ "thumbnail" ] )
     return files
 
-def cmd_update( args ):
-    token = get_token_ex( args )
+def cmd_update():
+    global args
+    token = get_token_ex()
     if token == "":
         print_error( "Not logged in." )
         return
@@ -580,26 +596,26 @@ def cmd_update( args ):
 
 load_settings()
 
-args = parse_args()
+parse_args()
 parameters = args[ "parameters" ]
 if len(parameters) == 0:
-    cmd_login( args )
+    cmd_login( )
 elif parameters[0] == "ls":
-    cmd_ls( args )
+    cmd_ls( )
 elif parameters[0] == "cat":
-    cmd_cat( args )
+    cmd_cat( )
 elif parameters[0] == "info":
-    cmd_info( args )
+    cmd_info( )
 elif parameters[0] == "login":
-    cmd_login( args )
+    cmd_login( )
 elif parameters[0] == "logout":
-    cmd_logout( args )
+    cmd_logout( )
 elif parameters[0] == "mkdir":
-    cmd_mkdir( args )
+    cmd_mkdir( )
 elif parameters[0] == "rm":
-    cmd_rm( args )
+    cmd_rm( )
 elif parameters[0] == "rmdir":
-    cmd_rmdir( args )
+    cmd_rmdir( )
 elif parameters[0] == "update":
-    cmd_update( args )
+    cmd_update( )
 
