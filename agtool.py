@@ -367,7 +367,21 @@ def cmd_ls():
         item_title = item[ "title" ]
         if item_title is None:
             item_title = ""
-        result = result + item_name + " (" + item_title + ")" + "\n"
+        item_access = item[ "access" ]
+        item_owner = item[ "owner" ]
+        item_size = item[ "size" ]
+        item_size_text = str( item_size )
+        item_modified = item[ "modified" ]
+        item_modified_text = time.strftime( "%Y-%m-%d %H:%M:%S", time.localtime( item_modified / 1000.0 ) ) 
+        # result = result + item_name + " (" + item_title + ")" + "\n"
+        # result = result + item_access + " " + item_owner + " " + item_size_text + " " + item_modified_text + " " + item_name + " (" + item_title + ")" + "\n"
+        result = result + item_access.ljust(10)
+        result = result + " " + item_owner.ljust(10)
+        result = result + " " + item_size_text.rjust(10)
+        result = result + " " + item_modified_text.ljust(20)
+        result = result + " " + item_name
+        result = result + " (" + item_title + ")"
+        result = result + "\n"
     print_text( result )
 
 def _login():
