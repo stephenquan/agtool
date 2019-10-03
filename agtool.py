@@ -516,8 +516,6 @@ def get_file_stream( filepath, mime_type = "", filename = ""):
     if mime_type == "":
         mime_type = get_mime_type( filename )
     stream = sys.stdin if filepath == "-" else open( filepath, "rb" )
-    print "filename: " + filename
-    print "mime_type: " + mime_type
     return ( filename, stream, mime_type )
 
 def get_files( args, item_title = "" ):
